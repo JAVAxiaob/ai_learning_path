@@ -1,0 +1,363 @@
+# Data and Models {#data}
+
+{{< include _setup.qmd >}}
+
+
+```{r}
+#| label: define custom_correlation_table
+custom_correlation_table <- function(dat) {
+  # Remove non-numeric columns and missing values
+  dat_clean <- na.omit(dat[, sapply(dat, is.numeric)])
+  
+  # Compute correlation matrix and convert to long format
+  cor_matrix <- cor(dat_clean)
+  cor_melt <- melt(cor_matrix)
+  cor_melt <- cor_melt[which(as.numeric(cor_melt$Var1) < as.numeric(cor_melt$Var2)), ]
+  
+  # Format correlation values
+  cor_melt$value <- round(cor_melt$value, 2)
+  
+  # Generate a markdown table without row numbers
+  kable(cor_melt, col.names = c("Variable 1", "Variable 2", "Correlation"), format = "markdown", row.names = FALSE)
+}
+```
+
+```{r}
+#| label: Define MI pairplot
+library("infotheo")
+fsubset = setdiff(colnames(bike), c("holiday", "workday", "cnt"))
+
+freedman_diaconis <- function(x) {
+  iqr <- IQR(x)
+  n <- length(x)
+  bin_width <- 2 * iqr * n^(-1/3)
+  num_bins <- ceiling((max(x) - min(x)) / bin_width)
+  return(num_bins)
+}
+
+custom_mi <- function(data, mapping, ...) {
+  x <- eval_data_col(data, mapping$x)
+  y <- eval_data_col(data, mapping$y)
+  if (is.numeric(x)){
+    x <- discretize(x, disc = "equalfreq", nbins = freedman_diaconis(x))
+  }
+  if (is.numeric(y)){
+    y <- discretize(y, disc = "equalfreq", nbins = freedman_diaconis(y))
+  }
+
+  mi <- mutinformation(x, y)
+  nmi <- (2 * mi) / (entropy(x) + entropy(y))
+  label <- paste0("NMI: ", round(nmi, 2))
+
+  ggally_text(label, ...) + theme_void()
+} 
+mi_pair_plot <- function(dat){
+  ggpairs(
+    dat,
+    lower = list(
+      continuous = wrap("smooth", alpha = 0.3, size = 0.7), # Smoothed scatterplot
+      combo = wrap("box_no_facet", alpha = 0.6, size = 0.5) # Boxplots for categorical vs numerical
+    ),
+    diag = list(
+      continuous = wrap("densityDiag", alpha = 0.4), # Density plot for numerical
+      discrete = wrap("barDiag", alpha = 0.7)        # Bar plot for categorical
+    ),
+    upper = list(
+      continuous = wrap(custom_mi, size = 4),                      # Correlation for numerical
+      combo = wrap(custom_mi, size = 4),                # Custom function for numerical-categorical
+      discrete = wrap(custom_mi)
+    ),
+    axisLabels = "show"                                        # Show axis labels
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(breaks = function(y) pretty(y, n=2))
+}
+```
+
+Throughout the book, there are two datasets that you will encounter often.
+One about bikes, the other about penguins.
+I love them both.
+This chapter presents the data and models that we will interpret in this book.
+
+## Bike rentals (regression) {#bike-data}
+
+This dataset contains daily counts of rented bikes from the bike rental company [Capital-Bikeshare](https://www.capitalbikeshare.com/) in Washington, D.C., along with weather and seasonal information.
+The data was kindly made openly available by Capital-Bikeshare.
+@fanaeet2014event added weather data and seasonal information.
+The data can be downloaded from the [UCI Machine Learning Repository](http://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset).
+I did a bit of data processing and ended up with these columns:
+
+- Count of bikes, including both casual and registered users. The count is used as the target in the regression task (`cnt`).
+- The season. Either spring, summer, fall, or winter (`season`).
+- Indicator of whether the day was a holiday or not (`holiday`).
+- Indicator of whether the day was a workday or weekend (`workday`).
+- The weather situation on that day. One of: Good, Misty, Bad (`weather`).
+- Temperature in degrees Celsius (`temp`).
+- Relative humidity in percent (0 to 100) (`hum`).
+- Wind speed in km per hour (`windspeed`).
+- Count of rented bikes two days before (`cnt_2d_bfr`).
+
+I removed one day where the humidity was measured as 0, and the first two days due to missing count data two days before (`cnt_2d_bfr`).
+All in all, the processed data contains `r nrow(bike)` days.
+
+### Predicting bike rentals
+
+Since this example is just for showcasing the interpretability methods, I took some liberties.
+I pretend that the weather features are forecasts (they are not).
+That means our prediction task has the following shape:
+We predict tomorrow's number of rented bikes based on weather forecasts, seasonal information, and how many bikes were rented yesterday.
+
+I trained all regression models using a simple holdout strategy: 2/3 of the data for training and 1/3 for testing.
+The machine learning algorithms were: random forest, CART decision tree, support vector machine, and linear regression.
+@tbl-performance-bike shows that the support vector machine performed best, since it had the lowest root mean squared error (RMSE) and the lowest mean absolute error (MAE).
+The random forest was slightly worse, and the linear regression model even more so.
+Trailing very far behind is the decision tree, which didn't work out so well at all.
+
+```{r}
+#| label: tbl-performance-bike
+#| tbl-cap: Comparing bike rental model performance on test data with root mean squared error (RMSE) and mean absolute error (MAE).
+rf_preds = predict(bike_rf, bike_test)
+rf_rmse = rmse(bike_test$cnt, rf_preds)
+rf_mae = mae(bike_test$cnt, rf_preds)
+
+tree_preds = predict(bike_tree, bike_test)
+tree_rmse = rmse(bike_test$cnt, tree_preds)
+tree_mae = mae(bike_test$cnt, tree_preds)
+
+
+svm_preds = predict(bike_svm, bike_test)
+svm_rmse = rmse(bike_test$cnt, svm_preds)
+svm_mae = mae(bike_test$cnt, svm_preds)
+
+lm_preds = predict(bike_lm, bike_test)
+lm_rmse = rmse(bike_test$cnt, lm_preds)
+lm_mae = mae(bike_test$cnt, lm_preds)
+
+# Create a markdown table
+results = data.frame(
+  Model = c("Random Forest", "Decision Tree", "SVM", "Linear Regression"),
+  RMSE = round(c(rf_rmse, tree_rmse, svm_rmse, lm_rmse), 0),
+  MAE = round(c(rf_mae, tree_mae, svm_mae, lm_mae), 0)
+)
+
+results = results[order(results$RMSE), ]
+kable(results, row.names=FALSE)
+```
+
+
+### Feature dependence
+
+For many interpretation methods, it's important to understand how the features are correlated.
+Therefore, let's have a look at the Pearson correlation for the numerical features.
+@tbl-bike-correlations shows that the only larger correlation is between count 2 days before and the temperature.
+But what about the categorical features?
+And what about non-linear correlation?
+
+To understand the non-linear dependencies, we will do two things:
+
+- Visualize the raw pairwise dependence (e.g., scatter plot) 
+- Compute the normalized mutual information (NMI) between two features. 
+
+```{r}
+#| label: tbl-bike-correlations
+#| tbl-cap: Pairwise Pearson correlation between the numerical bike rental features.
+custom_correlation_table(bike %>% select(-cnt))
+```
+
+
+The normalized mutual information is a number between 0 and 1.
+An NMI of 0 means that the features share no information, while 1 means all variation stems from their dependence.
+The NMI can be biased upwards for features with a large number of categories/bins [@mahmoudi2024proof].
+That means the more bins/categories, the less you should trust a large NMI value.
+That's why we also don't rely on NMI alone, but visualize the raw data and analyze Pearson correlation.
+
+
+::: {.callout-note}
+
+## Normalized Mutual Information
+
+Mutual information between two categorical random variables $X_j$ and $X_k$ is given by:
+
+$$
+MI(X_j, X_k) = \sum_{c, d} \mathbb{P}(c, d) \log \frac{\mathbb{P}(c, d)}{\mathbb{P}(c) \mathbb{P}(d)},
+$$
+
+where $c \in X_j$ and $d \in X_k$.
+$\mathbb{P}(c) = \mathbb{P}(X_j = c)$ is the probability that feature $X_j$ takes on category $c$, and the same for $\mathbb{P}(d)$.
+$\mathbb{P}(c, d) = \mathbb{P}(X_j = c, X_k = d)$ is the joint probability that feature $X_j$ takes on category $c$ and $X_k$ category $d$.
+Normalized mutual information scales MI from $[0, \infty[$ to $[0,1]$ (NMI may exceed this range under certain circumstances):
+
+$$NMI(X_j, X_k) = \frac{2 \cdot MI(X_j, X_k)}{H(X_j) + H(X_k)}$$
+
+where
+
+$$
+H(X_j) = -\sum_{c \in C_j} \mathbb{P}(c) \log \mathbb{P}(c).
+$$
+
+Where $C_j$ is the set of all categories $X_j$ can take on.
+To use (normalized) mutual information with numerical features, we discretize the observed values $\mathbf{x}_j$ of the feature $X_j$ into equally sized bins.
+The number of bins is determined using the Freedman-Diaconis rule [@freedman1981histogram]:
+
+$$\text{nbins}_j = \left\lceil \frac{\max(\mathbf{x}_j) - \min(\mathbf{x}_j)}{2 \cdot \frac{\text{IQR}(\mathbf{x}_j)}{n^{1/3}}} \right\rceil$$
+
+$\text{IQR}(\mathbf{x}_j)$ is the interquartile range of $\mathbf{x}_j$, $n$ the number of data instances, and we round up to the next larger integer.
+
+:::
+
+
+Now let's have a look at the raw dependence data and the normalized mutual information for the features in the bike sharing data in @fig-bike-mi.
+
+```{r}
+#| label: fig-bike-mi
+#| fig-cap: Normalized mutual information and pair plots for the features in the bike sharing data. I left out holiday and workday to make the plots easier to read.
+#| fig-asp: 0.8
+mi_pair_plot(bike_train[fsubset])
+```
+
+The NMI analysis overall confirms the impression from the correlation analysis.
+In addition, we get insights about the categorical features:
+The season shares information with temperature and count 2 days before, which isn't surprising.
+The pair plots also confirm that correlation coefficients are good measures of dependence for this dataset, since the numerical features don't show extravagant dependence patterns, but mostly linear ones.
+For the next data example, the dependence analysis has more surprises.
+
+## Palmer penguins (classification) {#penguins}
+
+For classification, we will use the Palmer penguins data.
+This cute dataset contains measurements from `r nrow(penguins)` penguins from the Palmer Archipelago in Antarctica (visualized in @fig-penguins).
+The dataset was collected and published by @gorman2014ecological, and the Palmer Station in Antarctica, which is part of the Long Term Ecological Research Network.
+The paper studies differences in appearance between male and female, among other things.
+That's why we'll use male/female classification based on body measurements (as the dataset creators did in their paper).
+
+::: {#fig-penguins layout-ncol=2}
+
+![The three penguin species in the data.](./images/lter_penguins.jpg){#fig-species}
+
+![Bill measurements.](./images/culmen_depth.jpg){#fig-bill}
+
+Palmer penguins artwork by \@allison_horst.
+:::
+
+Each row represents a penguin and contains the following information:
+
+- Sex of the penguin (male/female), which is the classification target (`sex`).
+- Species of penguin, which is one of Chinstrap, Gentoo, or Adelie (`species`).
+- Body mass of the penguin, measured in grams (`body_mass_g`).
+- Length of the bill (the beak), measured in millimeters (`bill_length_mm`).
+- Depth of the bill, measured in millimeters (`bill_depth_mm`).
+- Length of the flipper (the "tail"), measured in millimeters (`flipper_length_mm`).
+
+
+
+11 penguins had missing data.
+Since the purpose of this data is to demonstrate interpretable machine learning methods and not an in-depth study of penguins, I simply dropped penguin data with missing values.
+The dataset is loaded using the `palmerpenguins` R package [@horst2020allisonhorst].
+
+### Classifying penguin sex (male / female)
+
+For the data examples, I trained the following models, using a simple split into training 2/3 and holdout test data 1/3.
+To assess the performance of the models, I measured log loss and accuracy on the test data.
+The results are shown in @tbl-performance-penguins.
+
+The logistic regression model is actually 3 models: I first split the data by species, trained a logistic regression model, and combined the performance results.
+That's also what the @gorman2014ecological did in their paper.
+This is also the model that performed best.
+For the random forest and for the decision tree, I treated species as a feature.
+This didn't work out so well for the decision tree, but the performance of the random forest is close to the logistic regression models, at least in terms of accuracy.
+
+```{r}
+#| label: tbl-performance-penguins
+#| tbl-cap: Comparison of model performance for penguin sex classification (male/female).
+# Predictions for random forest 
+rf_probs = predict(pengu_rf, penguins_test, type = "prob")[,"female"]
+rf_preds = predict(pengu_rf, penguins_test)
+rf_log_loss = logLoss(predicted = rf_probs, actual = penguins_test$sex == "female")
+rf_accuracy = sum(rf_preds == penguins_test$sex) / nrow(penguins_test)
+
+# Predictions for decision tree
+tree_probs = predict(pengu_tree, penguins_test, type = "prob")
+tree_preds = predict(pengu_tree, penguins_test, type = "class")
+tree_log_loss = logLoss(predicted = tree_probs, actual = penguins_test$sex == "female")
+tree_accuracy = sum(tree_preds == penguins_test$sex) / nrow(penguins_test)
+
+# Predictions for multinomial logistic regression
+logreg_probs = predict(pengu_logreg, penguins_test)
+logreg_preds = ifelse(logreg_probs > 0.5, "female", "male")
+logreg_log_loss = logLoss(predicted = logreg_probs, actual = penguins_test$sex == "female")
+logreg_accuracy = sum(logreg_preds == penguins_test$sex) / nrow(penguins_test)
+
+results = data.frame(
+  Model = c("Random Forest", "Decision Tree", "Logistic Regression (by Species)"),
+  Log_Loss = round(c(rf_log_loss, tree_log_loss, logreg_log_loss),2),
+  Accuracy = round(c(rf_accuracy, tree_accuracy, logreg_accuracy),2)
+)
+
+results = results[order(results$Log_Loss), ]
+
+kable(results, row.names=FALSE)
+```
+
+
+### Feature dependence
+
+Let's have a look at how the penguin body measurements are correlated (Pearson correlation).
+
+```{r}
+#| label: tbl-penguins-correlations
+#| tbl-cap: Pearson correlation between the penguin features.
+custom_correlation_table(penguins %>% dplyr::select(-sex))
+```
+
+@tbl-penguins-correlations shows that especially the body mass and the flipper length are strongly correlated.
+But also other features are correlated, like flipper length and bill length, or flipper length and bill depth.
+However, Pearson correlation only tells half of the story, since it only measures linear dependence.
+Let's have a look at the pair plots of the features, along with the normalized mutual information.
+
+```{r}
+#| label: fig-penguins-nmi
+#| fig-cap: Pairwise Pearson correlation between the numerical penguin features.
+#| fig-asp: 0.8
+penguins_temp = penguins
+colnames(penguins_temp) <- gsub("_mm|_g", "", colnames(penguins_temp))
+mi_pair_plot(penguins_temp %>% dplyr::select(-sex))
+```
+
+@fig-penguins-nmi shows a much more nuanced picture than the Pearson correlation revealed.
+For example, the normalized mutual information between body mass and bill depth is similar to the NMI between body mass and flipper length.
+But the correlation between body mass and bill depth is much lower.
+The reason is that linear correlation isn't capturing the dynamics, at least not when bundling all the penguins together.
+The reason why linear correlation doesn't work well here is Simpson's paradox.
+In the Simpson's paradox a trend appears in several groups of the data, but disappears or flips when combining all data.
+Combining all penguin data turns a positive correlation between bill depth and body mass into a negative one, as shown in @fig-simpsons.
+The reason is that Gentoo penguins are heavier and have deeper bills.
+Mutual information overcomes this problem.
+
+```{r}
+#| label: fig-simpsons
+#| fig-cap: Penguin weight versus bill depth for all 3 species. The lines are regression lines for predicting bill depth from body mass for different subsets of the penguins.
+#| out-width: 80%
+penguins2 = penguins
+penguins2$species = "all"
+
+ggplot(data = penguins, aes(x = bill_depth_mm, y = body_mass_g, color = species)) +
+  geom_point() +  # Add points
+  geom_smooth(method = "lm", se = FALSE, data = rbind(penguins, penguins2)) +
+  xlab("Bill depth in mm") +
+  ylab("Body mass in grams") +
+  scale_color_viridis_d() +
+  theme(
+    legend.position = c(.90, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right"
+  ) +
+  my_theme()
+
+```
+
+
+A note on modeling all penguins together: Throughout the book, I'll treat the penguins as one dataset by default, using species as a feature.
+Arguably, it might be better to always model and analyze the penguins by species.
+However, this is a very common tension in machine learning: Often, data instances belong to a cluster or entity -- think of forecasting sales for different stores or classifying lab samples from the same batches -- and we have to decide whether to use separate models or using the entity id as a feature.
+
+
+

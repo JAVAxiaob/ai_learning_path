@@ -1,0 +1,150 @@
+# Copyright The Lightning AI team.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import sys
+from types import ModuleType
+from unittest.mock import MagicMock, Mock
+
+import pytest
+
+
+@pytest.fixture
+def mlflow_mock(monkeypatch):
+    mlflow = ModuleType("mlflow")
+    mlflow.set_tracking_uri = Mock()
+    monkeypatch.setitem(sys.modules, "mlflow", mlflow)
+
+    mlflow_tracking = ModuleType("tracking")
+    mlflow_tracking.MlflowClient = Mock()
+    mlflow_tracking.artifact_utils = Mock()
+    monkeypatch.setitem(sys.modules, "mlflow.tracking", mlflow_tracking)
+
+    mlflow_entities = ModuleType("entities")
+    mlflow_entities.Metric = Mock()
+    mlflow_entities.Param = Mock()
+    mlflow_entities.time = Mock()
+    monkeypatch.setitem(sys.modules, "mlflow.entities", mlflow_entities)
+
+    mlflow.tracking = mlflow_tracking
+    mlflow.entities = mlflow_entities
+
+    monkeypatch.setattr("lightning.pytorch.loggers.mlflow._MLFLOW_AVAILABLE", True)
+    monkeypatch.setattr("lightning.pytorch.loggers.mlflow._MLFLOW_SYNCHRONOUS_AVAILABLE", True)
+    return mlflow
+
+
+@pytest.fixture
+def wandb_mock(monkeypatch):
+    class RunType:  # to make isinstance checks pass
+        pass
+
+    run_mock = Mock(
+        spec=RunType,
+        log=Mock(),
+        config=Mock(),
+        watch=Mock(),
+        log_artifact=Mock(),
+        use_artifact=Mock(),
+        define_metric=Mock(),
+        id="run_id",
+    )
+
+    wandb = ModuleType("wandb")
+    wandb.init = Mock(return_value=run_mock)
+    wandb.run = Mock()
+    wandb.require = Mock()
+    wandb.Api = Mock()
+    wandb.Artifact = Mock()
+    wandb.Image = Mock()
+    wandb.Audio = Mock()
+    wandb.Video = Mock()
+    wandb.Table = Mock()
+    monkeypatch.setitem(sys.modules, "wandb", wandb)
+
+    wandb_sdk = ModuleType("sdk")
+    monkeypatch.setitem(sys.modules, "wandb.sdk", wandb_sdk)
+
+    wandb_sdk_lib = ModuleType("lib")
+    wandb_sdk_lib.RunDisabled = RunType
+    monkeypatch.setitem(sys.modules, "wandb.sdk.lib", wandb_sdk_lib)
+
+    wandb_wandb_run = ModuleType("wandb_run")
+    wandb_wandb_run.Run = RunType
+    monkeypatch.setitem(sys.modules, "wandb.wandb_run", wandb_wandb_run)
+
+    wandb.sdk = wandb_sdk
+    wandb.sdk.lib = wandb_sdk_lib
+    wandb.wandb_run = wandb_wandb_run
+
+    monkeypatch.setattr("lightning.pytorch.loggers.wandb._WANDB_AVAILABLE", True)
+    return wandb
+
+
+@pytest.fixture
+def comet_mock(monkeypatch):
+    comet = ModuleType("comet_ml")
+    monkeypatch.setitem(sys.modules, "comet_ml", comet)
+
+    # to support dunder methods calling we will create a special mock
+    comet_experiment = MagicMock(name="CommonExperiment")
+    setattr(comet_experiment, "__internal_api__set_model_graph__", MagicMock())
+    setattr(comet_experiment, "__internal_api__log_metrics__", MagicMock())
+    setattr(comet_experiment, "__internal_api__log_parameters__", MagicMock())
+
+    comet.Experiment = MagicMock(name="Experiment", return_value=comet_experiment)
+    comet.ExistingExperiment = MagicMock(name="ExistingExperiment", return_value=comet_experiment)
+    comet.OfflineExperiment = MagicMock(name="OfflineExperiment", return_value=comet_experiment)
+
+    comet.ExperimentConfig = Mock()
+    comet.start = Mock(name="comet_ml.start", return_value=comet.Experiment())
+    comet.config = Mock()
+
+    monkeypatch.setattr("lightning.pytorch.loggers.comet._COMET_AVAILABLE", True)
+    return comet
+
+
+@pytest.fixture
+def litlogger_mock(monkeypatch):
+    """Mock litlogger module for unit testing LightningLogger."""
+    experiment_mock = MagicMock()
+    experiment_mock.url = "https://lightning.ai/test/experiments/test-experiment"
+    experiment_mock.name = "test-experiment"
+    experiment_mock.version = "2024-01-01T00:00:00.000Z"
+    experiment_mock.get_file.return_value = "/path/to/file"
+    experiment_mock.get_model.return_value = MagicMock()
+    experiment_mock.get_model_artifact.return_value = "/path/to/artifact"
+    experiment_mock.series_mocks = {}
+
+    def get_series(key):
+        if key not in experiment_mock.series_mocks:
+            experiment_mock.series_mocks[key] = MagicMock()
+        return experiment_mock.series_mocks[key]
+
+    experiment_mock.__getitem__.side_effect = get_series
+
+    litlogger = ModuleType("litlogger")
+    litlogger.experiment = None
+    litlogger.Experiment = Mock(return_value=experiment_mock)
+    litlogger.File = Mock()
+    litlogger.Model = Mock()
+    monkeypatch.setitem(sys.modules, "litlogger", litlogger)
+
+    # Create generator submodule
+    generator_module = ModuleType("litlogger.generator")
+    generator_module._create_name = Mock(return_value="generated-name")
+    monkeypatch.setitem(sys.modules, "litlogger.generator", generator_module)
+
+    litlogger.generator = generator_module
+
+    monkeypatch.setattr("lightning.pytorch.loggers.litlogger._LITLOGGER_AVAILABLE", True)
+    return litlogger

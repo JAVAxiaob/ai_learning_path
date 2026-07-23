@@ -1,0 +1,5 @@
+format:
+  epub:
+    cover-image: ./images/cover.jpg
+    fig-align: center
+

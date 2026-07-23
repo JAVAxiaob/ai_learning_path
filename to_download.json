@@ -1,0 +1,104 @@
+﻿[
+    {
+        "http":  "https://github.com/christophM/interpretable-ml-book",
+        "url":  "https://github.com/christophM/interpretable-ml-book.git",
+        "name":  "interpretable-ml-book",
+        "dir":  "02-machine-learning"
+    },
+    {
+        "http":  "https://github.com/josephmisiti/awesome-machine-learning",
+        "url":  "https://github.com/josephmisiti/awesome-machine-learning.git",
+        "name":  "awesome-machine-learning",
+        "dir":  "02-machine-learning"
+    },
+    {
+        "http":  "https://github.com/harvardnlp/annotated-transformer",
+        "url":  "https://github.com/harvardnlp/annotated-transformer.git",
+        "name":  "annotated-transformer",
+        "dir":  "03-deep-learning"
+    },
+    {
+        "http":  "https://github.com/pytorch/examples",
+        "url":  "https://github.com/pytorch/examples.git",
+        "name":  "pytorch-examples",
+        "dir":  "03-deep-learning"
+    },
+    {
+        "http":  "https://github.com/lucidrains/vit-pytorch",
+        "url":  "https://github.com/lucidrains/vit-pytorch.git",
+        "name":  "vit-pytorch",
+        "dir":  "03-deep-learning"
+    },
+    {
+        "http":  "https://github.com/onnx/tutorials",
+        "url":  "https://github.com/onnx/tutorials.git",
+        "name":  "onnx-tutorials",
+        "dir":  "03-deep-learning"
+    },
+    {
+        "http":  "https://github.com/Lightning-AI/pytorch-lightning",
+        "url":  "https://github.com/Lightning-AI/pytorch-lightning.git",
+        "name":  "pytorch-lightning",
+        "dir":  "03-deep-learning"
+    },
+    {
+        "http":  "https://github.com/tensorflow/examples",
+        "url":  "https://github.com/tensorflow/examples.git",
+        "name":  "tensorflow-examples",
+        "dir":  "04-android-ai"
+    },
+    {
+        "http":  "https://github.com/googlesamples/mlkit",
+        "url":  "https://github.com/googlesamples/mlkit.git",
+        "name":  "mlkit",
+        "dir":  "04-android-ai"
+    },
+    {
+        "http":  "https://github.com/nihui/ncnn-android-yolov5",
+        "url":  "https://github.com/nihui/ncnn-android-yolov5.git",
+        "name":  "ncnn-android-yolov5",
+        "dir":  "04-android-ai"
+    },
+    {
+        "http":  "https://github.com/alibaba/MNN",
+        "url":  "https://github.com/alibaba/MNN.git",
+        "name":  "MNN",
+        "dir":  "04-android-ai"
+    },
+    {
+        "http":  "https://github.com/PaddlePaddle/PaddleOCR",
+        "url":  "https://github.com/PaddlePaddle/PaddleOCR.git",
+        "name":  "PaddleOCR",
+        "dir":  "04-android-ai"
+    },
+    {
+        "http":  "https://github.com/deepjavalibrary/djl-demo",
+        "url":  "https://github.com/deepjavalibrary/djl-demo.git",
+        "name":  "djl-demo",
+        "dir":  "05-java-ai-service"
+    },
+    {
+        "http":  "https://github.com/langchain4j/langchain4j",
+        "url":  "https://github.com/langchain4j/langchain4j.git",
+        "name":  "langchain4j",
+        "dir":  "05-java-ai-service"
+    },
+    {
+        "http":  "https://github.com/microsoft/onnxruntime",
+        "url":  "https://github.com/microsoft/onnxruntime.git",
+        "name":  "onnxruntime",
+        "dir":  "05-java-ai-service"
+    },
+    {
+        "http":  "https://github.com/langchain-ai/langchain",
+        "url":  "https://github.com/langchain-ai/langchain.git",
+        "name":  "langchain",
+        "dir":  "07-llm-apps"
+    },
+    {
+        "http":  "https://github.com/vllm-project/vllm",
+        "url":  "https://github.com/vllm-project/vllm.git",
+        "name":  "vllm",
+        "dir":  "07-llm-apps"
+    }
+]

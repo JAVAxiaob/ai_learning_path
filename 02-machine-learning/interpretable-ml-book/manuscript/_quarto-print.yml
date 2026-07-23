@@ -1,0 +1,26 @@
+format:
+  pdf:
+    documentclass: scrbook
+    highlight-style: arrow
+    fontsize: "10pt"
+    toc: true
+    toc-depth: 2
+    toc-title: "Content"
+    lof: false
+    lot: false
+    colorlinks: false 
+    links-as-notes: true
+    #link-bibliography: false
+    cite-method: natbib 
+    latex-engine: xelatex
+    fig-format: jpeg
+    include-in-header: 
+      - latex/preamble.tex
+    include-before-body: [latex/before_body.tex]
+    geometry:
+      - paperwidth=18.9cm
+      - paperheight=24.61cm
+      - inner=30mm
+      - outer=17mm
+      - top=30mm
+      - bottom=24mm 

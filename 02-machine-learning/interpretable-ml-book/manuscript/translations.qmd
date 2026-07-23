@@ -1,0 +1,58 @@
+# Translations {#translations}
+
+**Interested in translating the book?**
+
+This book is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-nc-sa/4.0/).
+This means that you are allowed to translate it and put it online.
+You have to mention me as the original author and you are not allowed to sell the book.
+
+If you are interested in translating the book, you can write a message and I can link your translation here.
+My address is chris@christophmolnar.com .
+
+**List of translations**
+
+**Bahasa Indonesia**
+
+- [A complete translation by Hatma Suryotrisongko and Smart City & Cybersecurity Laboratory, Information Technology, ITS](https://www.its.ac.id/it/id/interpretable-machine-learning/).
+
+
+**Chinese**:
+
+- [Complete translation of 2nd edition](https://blog.csdn.net/jiazhen/article/details/126824573) by Jiazhen from CSDN, an online community of programmers.
+-  [Complete translations](https://github.com/MingchaoZhu/InterpretableMLBook) by [Mingchao Zhu](https://github.com/MingchaoZhu). [Ebook and print versions](https://www.phei.com.cn/module/goods/wssd_content.jsp?bookid=57710) of this translation are available.
+-  [Translation of most chapters](https://blog.csdn.net/wizardforcel/article/details/98992150) by CSDN.
+-  [Translation of some chapters](https://zhuanlan.zhihu.com/p/63408696). The website also includes questions and answers from various users.
+
+**French**:
+
+- [Translation (in progress)](https://nicolasguillard.github.io/interpretable-ml-book-fr/) by Nicolas Guillard.
+
+**Japanese**
+
+- [Complete translation](https://hacarus.github.io/interpretable-ml-book-ja/index.html) by Ryuji Masui and team HACARUS.
+
+**Korean**:
+
+- [Complete Korean translation](https://tootouch.github.io/IML/taxonomy_of_interpretability_methods/) by [TooTouch](https://tootouch.github.io/)
+
+-  [Partial Korean translation](https://subinium.github.io/IML/) by [An Subin](https://subinium.github.io/)
+
+
+**Persian (Farsi)**
+
+- [Full Persian translation (Farsi)](https://maryammahmoudi1993.github.io/interpretable-machine-learning-persian-fa/chapters/00-cover.html) by Maryam Mahmoudi.
+
+**Spanish**
+
+- [Full Spanish translation (PDF)](https://github.com/Laboratorio-de-Tecnologia-Computacional/Aprendizado-de-Maquina-Interpretavel---Livro) by Prof. Dr. Aderval S. Luna
+- [Full Spanish translation](https://fedefliguer.github.io/AAI/) by [Federico Fliguer](https://www.linkedin.com/in/federico-fliguer/?originalSubdomain=ar)
+
+**Turkish**
+
+- [Full Turkish translation](https://ozancans-organization.gitbook.io/yorumlanabilir-makine-ogrenmesi) by [Ozancan Özdemir](https://ozancanozdemir.github.io/)  (2nd edition)
+
+
+**Vietnamese**
+
+-  [A complete translation](https://github.com/giangnguyen2412/InterpretableMLBook-Vietnamese) by Giang Nguyen, Duy-Tung Nguyen, Hung-Quang Nguyen, Tri Le and Hoang Nguyen.
+

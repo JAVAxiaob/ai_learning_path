@@ -1,0 +1,125 @@
+project:
+  type: book
+  resources:
+    - html/privacy-policy.html
+    - images/cover-sidepanel.jpg
+  post-render:
+    - ../scripts/redirect.py
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: true
+  freeze: true
+  fig-align: center
+
+engine: knitr
+
+book:
+  title: "Interpretable Machine Learning"
+  subtitle: "A Guide for Making Black Box Models Explainable"
+  author: "Christoph Molnar"
+  output-file: iml
+  favicon: images/favicon.jpg
+  cookie-consent:
+    type: express
+    style: simple
+    palette: light
+    policy-url: privacy-policy.html
+  google-analytics:
+    tracking-id: "G-V7RTNZBGE2"
+    anonymize-ip: true
+  margin-footer: <div id='book-purchase-links' class='book-purchase-links'></div>
+  page-footer: |
+    <a href="html/privacy-policy.html" target="_blank" style="font-size:11px;" > Privacy Policy </a> | <a href="https://christophmolnar.com/impressum" target="_blank" style="font-size:11px"> Impressum </a>
+  repo-url: https://github.com/christophM/interpretable-ml-book
+  repo-actions: [source, issue]
+  chapters:
+    - index.qmd
+    - intro.qmd
+    - interpretability.qmd
+    - goals.qmd
+    - overview.qmd
+    - data.qmd
+    - part: "Interpretable Models"
+      chapters:
+        - limo.qmd
+        - logistic.qmd
+        - extend-lm.qmd
+        - tree.qmd
+        - rules.qmd
+        - rulefit.qmd
+    - part: "Local Model-Agnostic Methods"
+      chapters:
+        - ceteris-paribus.qmd
+        - ice.qmd
+        - lime.qmd
+        - counterfactual.qmd
+        - anchors.qmd
+        - shapley.qmd
+        - shap.qmd
+    - part: "Global Model-Agnostic Methods"
+      chapters:
+        - pdp.qmd
+        - ale.qmd
+        - interaction.qmd
+        - decomposition.qmd
+        - feature-importance.qmd
+        - lofo.qmd
+        - global.qmd
+        - proto.qmd
+    - part: "Neural Network Interpretation"
+      chapters:
+        - cnn-features.qmd
+        - pixel-attribution.qmd
+        - detecting-concepts.qmd
+        - adversarial.qmd
+        - influential.qmd
+    - part: "Beyond the Methods" 
+      chapters:
+        - evaluation.qmd
+        - storytime.qmd
+        - future.qmd
+        - translations.qmd
+    - cite.qmd
+    - acknowledgements.qmd
+  appendices:
+    - what-is-machine-learning.qmd
+    - math-terms.qmd
+    - r-packages.qmd
+    - references.qmd
+
+bibliography: [references.bib,grateful-refs.bib]
+cite-method: citeproc
+
+format:
+  epub:
+    lang: en-US
+    html-math-method:
+      method: webtex
+      url: "http://127.0.0.1:8734/png.latex?"
+    highlight-style: printing
+    always_allow_html: true
+    css: html/epub.css
+    description: "Machine learning algorithms usually operate as black boxes and it is unclear how they derived a certain decision. This book is a guide for practitioners to make machine learning decisions interpretable."
+    toc-depth: 2
+  pdf:
+    documentclass: scrreprt 
+    to-depth: 2
+  html:
+    lightbox: true
+    cover-image: images/cover.jpg
+    include-in-header: [html/purchase.html]
+    page-layout: article 
+    smooth-scroll: true
+    theme: [cosmo, html/style.scss] 
+    grid:
+      sidebar-width: 370px
+    fig-align: center
+    number-depth: 0
+    #reference-location: margin
+    #citation-location: margin
+
+
+

@@ -1,0 +1,190 @@
+# Individual Conditional Expectation (ICE) {#ice}
+
+{{< include _setup.qmd >}}
+
+Individual Conditional Expectation (ICE) plots display one line per instance that shows how the instance's prediction changes when a feature changes.
+An ICE plot [@goldstein2015peeking] visualizes the dependence of the prediction on a feature for *each* instance separately, resulting in one line per instance of a dataset.
+The values for a line (and one instance) can be computed by keeping all other features the same, creating variants of this instance by replacing the feature's value with values from a grid, and making predictions with the black box model for these newly created instances.
+The result is a set of points for an instance with the feature value from the grid and the respective predictions.
+In other words, ICE plots are all the [ceteris paribus curves](#ceteris-paribus) for a dataset in one plot.
+
+## Examples
+
+@fig-ice-bike shows ICE plots for the [bike rental prediction](#bike-data).
+The underlying prediction model is a random forest.
+All curves seem to follow the same course, so there are no obvious interactions.
+
+::: {layout-ncol=1}
+
+```{r}
+#| label: fig-ice-bike
+#| fig-cap: "ICE plots of predicted bike rentals by temperature, humidity, and windspeed."
+#| fig-asp: 0.4
+#| out-width: 95%
+pred.bike = Predictor$new(bike_rf, bike_test)
+
+p1 = FeatureEffect$new(pred.bike, "temp", method = "ice")$plot() +
+  scale_x_continuous("Temperature") +
+  scale_y_continuous("Predicted bike rentals")
+
+p2 = FeatureEffect$new(pred.bike, "hum", method = "ice")$plot() +
+  scale_x_continuous("Humidity") +
+  scale_y_continuous("") +
+  theme(axis.title.y = element_blank(),
+        axis.text.y = element_blank())
+
+p3 = FeatureEffect$new(pred.bike, "windspeed", method = "ice")$plot() +
+  scale_x_continuous("Windspeed") +
+  scale_y_continuous("") +
+  theme(axis.title.y = element_blank(),
+        axis.text.y = element_blank())
+
+# Combine plots with reduced spacing
+(p1 | p2 | p3) + plot_layout(guides = "collect", widths = c(1, 1, 1))
+
+
+```
+
+```{r}
+#| label: fig-ice-bike-colored
+#| fig-cap: ICE curves for the random forest predicting bike rentals. Lines are colored by the season. Above the ICE plots are boxplots showing the distributions of humidity per season.
+#| out-width: 85%
+dat = FeatureEffect$new(pred.bike, "hum", method = "ice")$results
+bike2 = bike_test
+bike2$.id = 1:nrow(bike_test)
+
+dat = merge(bike2[c(".id", "season")], dat, by = ".id")
+iceplot = ggplot(dat) +
+  geom_line(aes(group=.id, x=hum, y=.value, color=season), alpha=0.3) +
+  scale_y_continuous("Predicted bike rentals", limits=c(0, NA)) +
+  scale_color_viridis(discrete=TRUE) +
+  scale_x_continuous("Humidity")
+
+iceplot
+```
+
+:::
+
+
+But we can also explore possible interactions by modifying the ICE plot.
+@fig-ice-bike-colored shows again the ICE plot for humidity, with the difference that the lines are now colored by the season.
+This shows a couple of things:
+First -- and that's not surprising -- different seasons have different "intercepts".
+Meaning that, for example, winter days have a lower prediction and summer the highest ones, independent of the humidity.
+But @fig-ice-bike-colored also shows that the effect of the humidity differs for the seasons:
+In winter, an increase in humidity only slightly reduces the predicted number of bike rentals.
+For summer, the predicted bike rentals stay more or less flat between 20% and 60% relative humidity and above 60% they drop by quite a bit.
+Humidity effects for spring and fall seem to be a mix of the "winter flatness" and the "summer jump".
+However, as indicated by the boxplots in @fig-ice-bike-colored, we shouldn't over-interpret very low humidity effects for summer and fall.
+
+::: {.callout-tip}
+
+# Use transparency and color
+
+If lines overlap heavily in a boxplot you can try to make them slightly transparent.
+If that doesn't help, you may be better off with a [partial dependence plot](#pdp).
+By coloring the lines based on another feature's value, you can study interactions.
+
+:::
+
+
+
+Let's go back to the [penguin classification task](#penguins) and see how the prediction of each instance is related to the feature `bill_length_mm`.
+We'll analyze a random forest that predicts the probability of a penguin being female given body measurements.
+@fig-ice-penguins is a rather ugly ICE plot.
+But sometimes that's the reality.
+The reason is that the model is rather sure for most penguins and jumps between 0 and 1.
+
+```{r}
+#| label: fig-ice-penguins
+#| fig-cap: ICE plot of P(Adelie) by bill length. Each line represents a penguin.
+#| out-width: 80%
+pred.penguins = Predictor$new(pengu_rf, penguins_test, class = "female")
+ice = FeatureEffect$new(pred.penguins, "bill_length_mm", method = "ice")$plot() + 
+  scale_color_discrete(guide='none') + 
+  scale_y_continuous('P(female)') +
+  scale_x_continuous("Bill length in mm")
+ice
+```
+
+
+## Centered ICE plot
+
+There's a problem with ICE plots:
+Sometimes it can be hard to tell whether the ICE curves differ between data points because they start at different predictions.
+A simple solution is to center the curves at a certain point in the feature and display only the difference in the prediction to this point.
+The resulting plot is called centered ICE plot (c-ICE).
+Anchoring the curves at the lower end of the feature is a good choice.
+Each curve is defined as:
+
+$$ICE^{(i)}_j(x_j) = \hat{f}(x_j, \mathbf{x}^{(i)}_{-j}) - \hat{f}(a, \mathbf{x}_{-j}^{(i)})$$
+
+
+where $\hat{f}$ is the fitted model, and $a$ is the anchor point.
+
+Let's have a look at a centered ICE plot for temperature for the bike rental prediction:
+
+```{r}
+#| label: ice-bike-centered
+#| fig-cap: "Centered ICE plots of predicted number of bikes by temperature. The lines show the difference in prediction compared to the prediction with the temperature fixed at its observed minimum."
+#| out-width: 80%
+predictor = Predictor$new(bike_rf, data = bike_test)
+ytext1 = sprintf("Different to prediction at temp = %.1f", min(bike$temp))
+ice1 = FeatureEffect$new(predictor, feature = "temp", center.at = min(bike$temp), method = "ice")$plot() +
+  scale_y_continuous(ytext1)
+#ytext2 = sprintf("Different to prediction at hum = %.1f", min(bike$hum))
+#ice2 = FeatureEffect$new(predictor, feature = "hum", center.at = min(bike$hum), method = "ice")$plot() +
+#  scale_y_continuous(ytext2)
+#ytext3 = sprintf("Different to prediction at windspeed = %.1f", min(bike$windspeed))
+#ice3 = FeatureEffect$new(predictor, feature = "windspeed", center.at = min(bike$windspeed), method = "ice")$plot() +
+#  scale_y_continuous(ytext3)
+#(ice1 | ice2 | ice3)
+ice1
+```
+
+The centered ICE plots make it easier to compare the curves of individual instances.
+This can be useful if we do not want to see the absolute change of a predicted value, but the difference in the prediction compared to a fixed point of the feature range.
+
+
+## Derivative ICE plot
+
+Another way to make it visually easier to spot heterogeneity is to look at the individual derivatives of the prediction function with respect to a feature.
+The resulting plot is called the derivative ICE plot (d-ICE).
+The derivatives of a function (or curve) tell you whether changes occur, and in which direction they occur.
+With the derivative ICE plot, it's easy to spot ranges of feature values where the black box predictions change for (at least some) instances.
+If there is no interaction between the analyzed feature $X_j$ and the other features $X_{-j}$, then the prediction function can be expressed as:
+
+$$\hat{f}(\mathbf{x}) = \hat{f}(x_j, \mathbf{x}_C) = g(x_j) + h(\mathbf{x}_{-j}), \quad\text{with}\quad\frac{\partial \hat{f}(\mathbf{x})}{\partial x_j} = g'(x_j)$$
+
+Without interactions, the individual partial derivatives should be the same for all instances.
+If they differ, it's due to interactions, and it becomes visible in the d-ICE plot.
+In addition to displaying the individual curves for the derivative of the prediction function with respect to the feature in $j$, showing the standard deviation of the derivative helps to highlight regions in feature $j$ with heterogeneity in the estimated derivatives.
+The derivative ICE plot takes a long time to compute and is rather impractical.
+
+
+## Strengths
+
+Individual conditional expectation curves are **intuitive to understand**.
+One line represents the predictions for one instance if we vary the feature of interest.
+
+ICE curves can **uncover heterogeneous relationships**.
+
+## Limitations
+
+ICE curves **can only display one feature** meaningfully, because two features would require the drawing of several overlaying surfaces, and you would not see anything in the plot.
+
+ICE curves suffer from correlation: If the feature of interest is correlated with the other features, then **some points in the lines might be invalid data points** according to the joint feature distribution.
+
+If many ICE curves are drawn, the **plot can become overcrowded**, and you will not see anything.
+The solution: Either add some transparency to the lines or draw only a sample of the lines.
+
+In ICE plots it might not be easy to **see the average**.
+This has a simple solution:
+Combine individual conditional expectation curves with the [partial dependence plot](#pdp).
+
+## Software and alternatives
+
+ICE plots are implemented in the R packages `iml` [@molnar2018iml] (used for these examples), `ICEbox`, and `pdp`.
+Another R package that does something very similar to ICE is `condvis`.
+In Python, you can use [PiML](https://selfexplainml.github.io/PiML-Toolbox/_build/html/index.html) [@sudjianto2023piml].
+

@@ -1,0 +1,30 @@
+plugins {
+    id("org.springframework.boot") version "3.5.3"
+    id("io.spring.dependency-management") version "1.1.7"
+    java
+}
+apply(file("../../tools/gradle/javaFormatter.gradle.kts"))
+
+group = "com.example"
+version = "0.0.1-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven("https://central.sonatype.com/repository/maven-snapshots/")
+}
+
+dependencies {
+    implementation(platform("ai.djl:bom:${property("djl_version")}"))
+    implementation("ai.djl.pytorch:pytorch-model-zoo")
+
+    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+}
+
+tasks {
+    register<Exec>("deploy") {
+        dependsOn("build")
+        executable("./deploy.sh")
+    }
+}

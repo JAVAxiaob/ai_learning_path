@@ -1,0 +1,145 @@
+```{r}
+#| label: load R packages
+library("ceterisParibus")
+library("dplyr")
+library("DALEX")
+library("GGally")
+library("ggplot2")
+library("grateful")
+library("iml")
+library("knitr")
+library("kableExtra")
+library("Metrics")
+library("nnet")
+library("palmerpenguins")
+library("patchwork")
+library("randomForest")
+library("ranger")
+library("reshape2")
+library("rpart")
+library("tidyr")
+library("viridis")
+library("yaImpute")
+```
+
+```{r}
+#| label: penguin data and models
+set.seed(2)
+penguins = na.omit(penguins)
+penguins_orig = penguins
+penguins_col_selection = c('species', 'bill_depth_mm', 'bill_length_mm', 'flipper_length_mm', 'sex', 'body_mass_g') 
+penguins = penguins[penguins_col_selection] 
+penguin_train_index <- sample(1:nrow(penguins), 2/3 * nrow(penguins))
+penguins_train <- penguins[penguin_train_index, ]
+penguins_test <- penguins[-penguin_train_index, ]
+
+# Make sure P(female) is predicted
+penguins$sex <- relevel(penguins$sex, ref = "male")
+pengu_rf = randomForest(sex ~ ., data = penguins_train)
+pengu_tree = rpart(sex ~ ., data = penguins_train)
+
+# Split the data by species
+species_models <- lapply(split(penguins_train, penguins_train$species), function(data) {
+  data$species = NULL
+  # ensuring the right levels
+  data$sex <- relevel(data$sex, ref = "male")
+  glm(sex ~ ., data = data, trace = FALSE, family = binomial(link = "logit"))
+})
+
+pengu_logreg <- list(models = species_models)
+class(pengu_logreg) <- "pengu_logreg"
+
+predict.pengu_logreg <- function(object, newdata, ...) {
+  predictions <- numeric(nrow(newdata))
+  
+  for (species in names(object$models)) {
+    # Filter test data for this species
+    species_data <- newdata[newdata$species == species, ]
+    if (nrow(species_data) > 0) {
+      # Predict using the appropriate model
+      model <- object$models[[species]]
+      species_predictions <- predict(model, newdata = species_data, type = "response", ...)
+      
+      # Create temporary data frame with predictions
+      pred_df <- data.frame(
+        row_id = seq_len(nrow(newdata))[newdata$species == species],
+        pred = species_predictions
+      )
+      # Update predictions using merge matching
+      predictions[pred_df$row_id] <- pred_df$pred
+    }
+  }
+  
+  return(predictions)
+}
+
+```
+
+
+
+```{r}
+#| label: bike data and models
+set.seed(42)
+load("../data/bike.RData")
+bike = na.omit(bike)
+bike_features =  c('season','holiday', 'workday', 'weather', 'temp', 'hum', 'windspeed',  "cnt_2d_bfr")
+bike = bike[c(bike_features, "cnt")]
+bike_train_index <- sample(1:nrow(bike), 2/3 * nrow(bike))
+bike_train <- bike[bike_train_index, ]
+bike_test <- bike[-bike_train_index, ]
+
+bike_rf = randomForest(cnt ~ ., data = bike_train)
+bike_tree = rpart(cnt ~ ., data = bike_train)
+bike_svm = e1071::svm(cnt ~ ., data = bike_train)
+bike_lm = lm(cnt ~ ., data = bike_train, x = TRUE)
+```
+
+
+```{r}
+#| label: load data
+set.seed(42)
+
+## Load datasets
+load("../data/ycomments.RData")
+```
+
+```{r}
+my_theme = function(legend.position='right'){
+  theme_bw() %+replace%
+    theme(legend.position=legend.position)
+}
+
+theme_set(my_theme())
+default_color = "azure4"
+```
+
+
+```{r}
+#| label: define util functions
+
+pretty_rownames = function(rnames){
+  rnames = gsub('^`', '', rnames)
+  rnames = gsub('`$', '', rnames)
+  rnames = gsub('`', ':', rnames)
+  rnames
+}
+
+```
+
+```{r}
+#| label: outfig function
+out2fig = function(out.width, out.width.default = 1, fig.width.default = NA) {
+  if (is.na(fig.width.default)){
+    fig.width.default = as.numeric(knitr::opts_current$get("fig.width"))
+  }
+  fig.width.default * out.width / out.width.default 
+}
+```
+
+
+```{r}
+#| label: Define width for table
+single_col_width = "35em"
+```
+
+

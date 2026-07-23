@@ -1,0 +1,133 @@
+apiVersion: leaderworkerset.x-k8s.io/v1
+kind: LeaderWorkerSet
+metadata:
+  name: lmi
+spec:
+  replicas: 1
+  leaderWorkerTemplate:
+    size: 2
+    restartPolicy: RecreateGroupOnPodRestart
+    leaderTemplate:
+      metadata:
+        labels:
+          role: leader
+      spec:
+        containers:
+          - name: lmi-leader
+            image: deepjavalibrary/djl-serving:lmi-nightly
+            volumeMounts:
+              - name: dshm
+                mountPath: /dev/shm
+              - name: model-storage
+                mountPath: /opt/ml/model
+              - name: cache-storage
+                mountPath: /tmp/.djl.ai/
+            env:
+              - name: GROUP_INDEX
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.labels['leaderworkerset.sigs.k8s.io/group-index']
+              - name: NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              - name: LWS_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.labels['leaderworkerset.sigs.k8s.io/name']
+              - name: DJL_WORKER_ADDR_FORMAT
+                value: "$(LWS_NAME)-$(GROUP_INDEX)-%d.$(LWS_NAME).$(NAMESPACE)"
+              - name: DJL_LEADER_ADDR
+                value: "$(LWS_LEADER_ADDRESS)"
+              - name: MASTER_ADDR
+                value: "$(LWS_LEADER_ADDRESS)"
+              - name: DJL_CLUSTER_SIZE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.annotations['leaderworkerset.sigs.k8s.io/size']
+              - name: HF_MODEL_ID
+                value: "s3://my_bucket/llama-3.1-405b-hf/"
+              - name: TENSOR_PARALLEL_DEGREE
+                value: "8"
+              - name: PIPELINE_PARALLEL_DEGREE
+                value: "2"
+              - name: OPTION_MAX_ROLLING_BATCH_SIZE
+                value: "64"
+              - name: AWS_ACCESS_KEY_ID
+                value: ""
+              - name: AWS_SECRET_ACCESS_KEY
+                value: ""
+              - name: AWS_SESSION_TOKEN
+                value: ""
+            command:
+              - sh
+              - -c
+              - "service ssh start;djl-serving"
+            resources:
+              limits:
+                nvidia.com/gpu: "8"
+              requests:
+                cpu: "32"
+                memory: 640Gi
+                nvidia.com/gpu: "8"
+            ports:
+              - containerPort: 8080
+            readinessProbe:
+              tcpSocket:
+                port: 8080
+              initialDelaySeconds: 15
+              periodSeconds: 10
+        volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          - name: model-storage
+            hostPath:
+              path: /opt/ml/model/
+          - name: cache-storage
+            hostPath:
+              path: /tmp/.djl.ai/
+    workerTemplate:
+      spec:
+        containers:
+          - name: lmi-worker
+            image: deepjavalibrary/djl-serving:lmi-nightly
+            volumeMounts:
+              - name: dshm
+                mountPath: /dev/shm
+              - name: model-storage
+                mountPath: /opt/ml/model
+              - name: cache-storage
+                mountPath: /tmp/.djl.ai/
+            env:
+              - name: DJL_LEADER_ADDR
+                value: "$(LWS_LEADER_ADDRESS)"
+              - name: HF_MODEL_ID
+                value: "s3://my_bucket/llama-3.1-405b-hf/"
+              - name: AWS_ACCESS_KEY_ID
+                value: ""
+              - name: AWS_SECRET_ACCESS_KEY
+                value: ""
+              - name: AWS_SESSION_TOKEN
+                value: ""
+            command:
+              - sh
+              - -c
+              - "service ssh start; /usr/bin/python3 /opt/djl/partition/run_multi_node_setup.py; tail -f"
+            resources:
+              limits:
+                nvidia.com/gpu: "8"
+              requests:
+                cpu: "32"
+                memory: 640Gi
+                nvidia.com/gpu: "8"
+        volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+          - name: model-storage
+            hostPath:
+              path: /opt/ml/model/
+          - name: cache-storage
+            hostPath:
+              path: /tmp/.djl.ai/
