@@ -36,7 +36,7 @@ graph TD
         AI -->|多模型适配抽象| MODEL_ROUTER{模型路由分发器}
     end
 
-    subgraph 核心组件层 ⭐ 本章节重点
+    subgraph 核心组件层  本章节重点
         MODEL_ROUTER -->|对话/生成类 LLM| LLM[Spring AI ChatClient<br>OpenAI/通义/文心/Llama3多供应商适配]
         MODEL_ROUTER -->|图像/表格/传统ML| DJL[DJL Deep Java Library<br>Maven自动下native CUDA包]
         MODEL_ROUTER -->|跨框架ONNX格式| ONNX[ONNX Runtime Java<br>OrtSession 线程池 + Batch]

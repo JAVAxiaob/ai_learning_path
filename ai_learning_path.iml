@@ -2,7 +2,22 @@
 <module type="GENERAL_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/02-machine-learning/xgboost/doc/_static" />
+      <excludeFolder url="file://$MODULE_DIR$/03-deep-learning/pytorch-examples/distributed/minGPT-ddp/mingpt/data" />
+      <excludeFolder url="file://$MODULE_DIR$/03-deep-learning/pytorch-examples/word_language_model/data" />
+      <excludeFolder url="file://$MODULE_DIR$/03-deep-learning/pytorch-lightning/.lightning" />
+      <excludeFolder url="file://$MODULE_DIR$/03-deep-learning/pytorch-lightning/docs/source-pytorch/data" />
+      <excludeFolder url="file://$MODULE_DIR$/03-deep-learning/pytorch-lightning/src/lightning/data" />
+      <excludeFolder url="file://$MODULE_DIR$/03-deep-learning/pytorch-lightning/tests/legacy/checkpoints" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/djl-demo/apache-flink/image-classification/src/main/java/com/example/dataset" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/langchain4j/http-clients/langchain4j-http-client-jdk/src/main/java/dev/langchain4j/http/client/jdk" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/langchain4j/http-clients/langchain4j-http-client-jdk/src/test/java/dev/langchain4j/http/client/jdk" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/onnxruntime/.vscode" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/onnxruntime/js/.vscode" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/onnxruntime/onnxruntime/python/tools/tensorrt/perf/build" />
+      <excludeFolder url="file://$MODULE_DIR$/05-java-ai-service/onnxruntime/tools/ci_build/github/linux/ort_minimal/build_check_binsize_config" />
+    </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

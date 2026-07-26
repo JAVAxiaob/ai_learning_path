@@ -36,7 +36,7 @@ graph TD
         THROTTLE -->|处理不过来就丢!保持流畅| DROP[丢弃帧]
     end
 
-    subgraph 预处理层: 埋点80%Crash在这里 ⚠️
+    subgraph 预处理层: 埋点80%Crash在这里 
         YUV --> ROT{旋转角度正确吗?}
         ROT -->|前置记得mirror| RGB[YUV→RGB Bitmap转换]
         RGB --> RESIZE[LetterBox Resize 640×640]
@@ -61,7 +61,7 @@ graph TD
         NMS --> RESULT[结果列表: 类别+框+置信度]
     end
 
-    RESULT --> MATRIX[图像坐标→屏幕坐标转换 Matrix<sup>⚠️旋转+缩放+镜像</sup>]
+    RESULT --> MATRIX[图像坐标→屏幕坐标转换 Matrix<sup>️旋转+缩放+镜像</sup>]
     MATRIX --> OV[UI层 Canvas.drawRect 绘制]
 ```
 
